@@ -286,15 +286,16 @@ static void *master_receive_data_task(void *args)
  * When it happens, task turns fake master back to slave.	*/
 static void *fake_master_monitor_task(void *args)
 {
-	int32_t buffer = 0;
+	int32_t buffer[120] = {0};
 	socklen_t addrlen = sizeof(fstr.faddr);
+	char str_to_print[80] = {0};
 
 	while(1)
 	{
-		if (recvfrom(fstr.fsock, &buffer, sizeof(buffer), 0, (struct sockaddr *)&fstr.faddr, &addrlen) >= 0)
+		if (recvfrom(fstr.fsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&fstr.faddr, &addrlen) >= 0)
 		{
 			/* True master detected */
-			if (buffer == MASTER_DETECT)
+			if (buffer[0] == MASTER_DETECT)
 			{
 				/* Close all master tasks */
 				master_off();
@@ -305,8 +306,15 @@ static void *fake_master_monitor_task(void *args)
 				sock = multirole_run(0, 0, &mcast_addr, sizeof(mcast_addr));
 				break;
 			}
+			if (buffer[0] == PAYLOAD_CMD)
+			{
+				bzero(str_to_print, sizeof(str_to_print));
+				memcpy(str_to_print, &buffer[2], sizeof(str_to_print));
+				printf("%s\n", str_to_print);
+				set_display_brightness(buffer[1]);
+			}
 		} else {
-			printf("recv problem");
+			printf("recv problem\n");
 		}
 	}
 	printf("Fake master OFF...\n");
@@ -358,6 +366,7 @@ static void *slave_receive_data_task(void *args)
 				}
 				case (PAYLOAD_CMD):
 				{
+					bzero(str_to_print, sizeof(str_to_print));
 					memcpy(str_to_print, &buffer[2], sizeof(str_to_print));
 					printf("%s\n", str_to_print);
 					set_display_brightness(buffer[1]);
@@ -366,7 +375,7 @@ static void *slave_receive_data_task(void *args)
 				default: break;
 			}
 		} else {
-			printf("recv problem");
+			printf("recv problem\n");
 		}
 
 		/* Every received packet is signalling to "connection monitor" */
