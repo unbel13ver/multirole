@@ -1,0 +1,10 @@
+Multicast-based multirole networking example.
+
+1. Building
+	$ mkdir build && cd build
+	$ cmake ../
+	$ make
+
+2. Running
+	$ ./multirole MASTER // for master (only one)
+	$ ./multirole // for client (max 100 at the current version)
